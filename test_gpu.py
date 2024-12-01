@@ -6,35 +6,51 @@ from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 import matplotlib.pyplot as plt
+import random
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+set_seed(42)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 features = ['Copper', 'Sugar', 'Natural Gas', 'Silver',
-            'Platinum',  'Feeder Cattle', 'Lean Hogs', 'Cotton',
-            'Live Cattle', 'Kansas Wheat'
-]
-sequence_length = 30
-batch_size = 16
-hidden_size = 16
+            'Feeder Cattle', 'Lean Hogs', 'Cotton', 'Live Cattle']
+
+sequence_length = 20
+batch_size = 32
+hidden_size = 64
 output_size = 1
-num_layers = 2
+num_layers = 3
 num_epochs = 80
-learning_rate = 0.00005
+learning_rate = 0.0001
+
 
 x_train = pd.read_csv('clean_csv/x_train.csv').set_index('Date')
 y_train = pd.read_csv('clean_csv/y_train.csv').set_index('Date').iloc[:, 0:1]
+
 x_test = pd.read_csv('clean_csv/x_test.csv').set_index('Date')
 y_test = pd.read_csv('clean_csv/y_test.csv').set_index('Date').iloc[:, 0:1]
 
 x_train = x_train[features].values
 y_train = y_train.values
+
 x_test = x_test[features].values
 y_test = y_test.values
 
 scaler_x = MinMaxScaler()
 scaler_y = MinMaxScaler()
+
 x_train = scaler_x.fit_transform(x_train)
 y_train = scaler_y.fit_transform(y_train)
+
 x_test = scaler_x.transform(x_test)
 y_test = scaler_y.transform(y_test)
 
@@ -46,6 +62,7 @@ def create_sequences(data_x, data_y, seq_length):
         y_seq = data_y[i + seq_length]
         xs.append(x_seq)
         ys.append(y_seq)
+
     return torch.tensor(np.array(xs), dtype=torch.float32), torch.tensor(
         np.array(ys), dtype=torch.float32
     )
@@ -56,6 +73,7 @@ x_test_seq, y_test_seq = create_sequences(x_test, y_test, sequence_length)
 
 train_data = TensorDataset(x_train_seq, y_train_seq)
 test_data = TensorDataset(x_test_seq, y_test_seq)
+
 train_loader = DataLoader(
     train_data, batch_size=batch_size, shuffle=False
 )
@@ -65,25 +83,36 @@ test_loader = DataLoader(
 
 
 class GRUModel(nn.Module):
-    def __init__(
-        self, input_size, hidden_size, output_size, num_layers
-    ):
+    def __init__(self, input_size, hidden_size, output_size, num_layers):
         super(GRUModel, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
+
+        # GRU Layer
         self.gru = nn.GRU(
             input_size,
             hidden_size,
             num_layers,
             batch_first=True
         )
-        self.fc = nn.Linear(hidden_size, output_size)
+
+        self.fc1 = nn.Linear(hidden_size, hidden_size // 2)
+        self.fc2 = nn.Linear(hidden_size // 2, output_size)
+
+        self.relu = nn.ReLU()
 
     def forward(self, x):
         batch_size = x.size(0)
-        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size).to(device)
+
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size).to(x.device)
+
         out, _ = self.gru(x, h0)
-        out = self.fc(out[:, -1, :])
+
+        out = out[:, -1, :]
+
+        out = self.relu(self.fc1(out))
+        out = self.fc2(out)
+
         return out
 
 
@@ -93,6 +122,7 @@ model = GRUModel(
     output_size=output_size,
     num_layers=num_layers,
 ).to(device)
+
 
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)

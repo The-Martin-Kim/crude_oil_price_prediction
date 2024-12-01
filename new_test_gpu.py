@@ -6,23 +6,30 @@ from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
-# Device configuration
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+set_seed(42)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Feature columns
 features = ['Copper', 'Sugar', 'Natural Gas', 'Silver',
-            'Platinum', 'Feeder Cattle', 'Lean Hogs', 'Cotton',
-            'Live Cattle', 'Kansas Wheat']
+            'Feeder Cattle', 'Lean Hogs', 'Cotton']
 
-# Hyperparameters
 sequence_length = 20
-batch_size = 16
-hidden_size = 16
+batch_size = 32
+hidden_size = 64
 output_size = 1
-num_layers = 6
+num_layers = 3
 num_epochs = 80
-learning_rate = 0.00005
+learning_rate = 0.0001
 
 # Load original train and test data
 x_train = pd.read_csv('clean_csv/x_train.csv')
@@ -92,19 +99,44 @@ class GRUModel(nn.Module):
         super(GRUModel, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        self.gru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, output_size)
+
+        # GRU Layer
+        self.gru = nn.GRU(
+            input_size,
+            hidden_size,
+            num_layers,
+            batch_first=True
+        )
+
+        self.fc1 = nn.Linear(hidden_size, hidden_size // 2)
+        self.fc2 = nn.Linear(hidden_size // 2, hidden_size // 4)
+        self.fc3 = nn.Linear(hidden_size // 4, hidden_size // 8)
+        self.fc4 = nn.Linear(hidden_size // 8, output_size)
+
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.0)
 
     def forward(self, x):
         batch_size = x.size(0)
-        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size).to(device)
+
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size).to(x.device)
+
         out, _ = self.gru(x, h0)
-        out = self.fc(out[:, -1, :])
+
+        out = out[:, -1, :]
+
+        out = self.relu(self.fc1(out))
+        out = self.relu(self.fc2(out))
+        out = self.relu(self.fc3(out))
+        out = self.fc4(out)
+
         return out
 
-# Initialize model, loss function, and optimizer
-model = GRUModel(input_size=len(features) + 1, hidden_size=hidden_size,  # '+1' for 'Close'
-                 output_size=output_size, num_layers=num_layers).to(device)
+model = GRUModel(input_size=len(features) + 1,
+                     hidden_size=hidden_size,
+                     output_size=output_size,
+                     num_layers=num_layers).to(device)
+
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
