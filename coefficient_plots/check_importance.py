@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
-x_train = pd.read_csv('clean_csv/x_train.csv').drop(columns=['Date'])
-y_train = pd.read_csv('clean_csv/y_train.csv').iloc[:, 1]
+x_train = pd.read_csv('../clean_csv/x_train.csv').drop(columns=['Date'])
+y_train = pd.read_csv('../clean_csv/y_train.csv').iloc[:, 1]
 
 model = LinearRegression()
 model.fit(x_train, y_train)

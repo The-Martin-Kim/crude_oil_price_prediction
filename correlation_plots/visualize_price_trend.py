@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import math
 
-x_train = pd.read_csv('clean_csv/x_train.csv')
-x_test = pd.read_csv('clean_csv/x_test.csv')
-y_train = pd.read_csv('clean_csv/y_train.csv')
-y_test = pd.read_csv('clean_csv/y_test.csv')
+x_train = pd.read_csv('../clean_csv/x_train.csv')
+x_test = pd.read_csv('../clean_csv/x_test.csv')
+y_train = pd.read_csv('../clean_csv/y_train.csv')
+y_test = pd.read_csv('../clean_csv/y_test.csv')
 
 scaler = MinMaxScaler()
 
@@ -41,8 +41,8 @@ def scale_and_save_grid_with_corr(data, y_scaled, filename, title_prefix):
     plt.close()
 
 
-scale_and_save_grid_with_corr(x_train, y_train_scaled, 'correlation_plots/x_train_trends_with_corr.png', 'x_train (Scaled)')
-scale_and_save_grid_with_corr(x_test, y_test_scaled, 'correlation_plots/x_test_trends_with_corr.png', 'x_test (Scaled)')
+scale_and_save_grid_with_corr(x_train, y_train_scaled, 'x_train_trends_with_corr.png', 'x_train (Scaled)')
+scale_and_save_grid_with_corr(x_test, y_test_scaled, 'x_test_trends_with_corr.png', 'x_test (Scaled)')
 
 
 def scale_and_save_single(data, y_scaled, filename, title):
@@ -61,5 +61,5 @@ def scale_and_save_single(data, y_scaled, filename, title):
     plt.close()
 
 
-scale_and_save_single(y_train, y_train_scaled, 'correlation_plots/y_train_trend_with_corr.png', 'y_train (Scaled)')
-scale_and_save_single(y_test, y_test_scaled, 'correlation_plots/y_test_trend_with_corr.png', 'y_test (Scaled)')
+scale_and_save_single(y_train, y_train_scaled, 'y_train_trend_with_corr.png', 'y_train (Scaled)')
+scale_and_save_single(y_test, y_test_scaled, 'y_test_trend_with_corr.png', 'y_test (Scaled)')
