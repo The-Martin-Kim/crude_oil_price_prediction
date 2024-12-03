@@ -33,8 +33,8 @@ learning_rate = 0.0001
 
 x_train = pd.read_csv('clean_csv/x_train.csv')
 y_train = pd.read_csv('clean_csv/y_train.csv')
-x_test = pd.read_csv('clean_csv/x_test.csv')
-y_test = pd.read_csv('clean_csv/y_test.csv')
+x_test = pd.read_csv('new_test_data/new_x_test.csv')
+y_test = pd.read_csv('new_test_data/new_y_test.csv')
 
 x_train['Date'] = pd.to_datetime(x_train['Date'])
 x_test['Date'] = pd.to_datetime(x_test['Date'])
@@ -178,5 +178,5 @@ plt.plot(test_actuals, label='Actual')
 plt.plot(test_predictions, label='Predicted')
 plt.legend()
 plt.title('Actual vs Predicted')
-plt.savefig("result.png")
+plt.savefig("new_result.png")
 plt.show()
